@@ -1,36 +1,23 @@
 
-# Advanced Data Explorer
+# Dashboard Tool - Version 1
 
-This project provides an interactive dashboard tool using Flask and Dash for data analysis. Users can upload datasets, filter data, and visualize it dynamically using various types of plots.
+This version includes the following features:
+1. Upload datasets or select from a prepopulated list.
+2. Join and manipulate datasets in the UI.
+3. Create visualizations like scatter plots, histograms, and line plots.
 
-## Features
-1. **Dataset Management**: Upload your own datasets or select predefined ones.
-2. **Dynamic Filters**: Filter data based on column values (numeric or categorical).
-3. **Visualization Options**:
-   - Scatter Plot
-   - Line Plot
-   - Box Plot
-   - Histogram
-   - 3D Scatter Plot
-   - Heatmap
-4. **Export Options**:
-   - Download filtered data as CSV.
-   - Export visualizations as PNG images.
+## Setup Instructions
 
-## How to Run
-1. Install required libraries:
-   ```bash
-   pip install flask pandas dash plotly
+1. Install the required Python libraries:
+   ```
+   pip install flask dash pandas plotly
    ```
 
-2. Start the Flask server:
-   ```bash
+2. Run the Flask application:
+   ```
    python app.py
    ```
 
-3. Access the application at `http://localhost:5000`.
-
-## File Structure
-- `app.py`: Flask application for dataset management and integration with Dash.
-- `dash_app.py`: Dash application for interactive visualization.
-- `templates/`: HTML templates for embedding the Dash app.
+3. Access the dashboard at:
+   - Main Page: `http://127.0.0.1:5000/`
+   - Dashboard: `http://127.0.0.1:5000/dashboard/`

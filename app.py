@@ -1,45 +1,83 @@
 
-from flask import Flask, render_template, request, redirect, url_for, jsonify
+from flask import Flask, render_template, request, jsonify
 import pandas as pd
-import os
-from dash import Dash
+from dash import Dash, dcc, html, Input, Output
+import plotly.express as px
 
+# Initialize Flask app
 app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = 'uploads'
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-PREDEFINED_DATASETS = {
-    "Sample A": "static/datasets/sample_a.csv",
-    "Sample B": "static/datasets/sample_b.csv"
+# Prepopulated datasets
+datasets = {
+    "sample1": pd.DataFrame({
+        "A": [1, 2, 3, 4],
+        "B": [10, 20, 30, 40],
+        "C": [100, 200, 300, 400]
+    }),
+    "sample2": pd.DataFrame({
+        "X": [5, 6, 7, 8],
+        "Y": [50, 60, 70, 80],
+        "Z": [500, 600, 700, 800]
+    })
 }
 
-dataframes = {}
+# Store uploaded datasets
+uploaded_data = {}
 
-@app.route('/')
+@app.route("/")
 def index():
-    return render_template('index.html', datasets=list(PREDEFINED_DATASETS.keys()))
+    return render_template("index.html")
 
-@app.route('/upload', methods=['POST'])
-def upload_dataset():
-    if 'dataset' not in request.files:
-        return "No file uploaded", 400
-    file = request.files['dataset']
-    filepath = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
-    file.save(filepath)
-    dataframes["uploaded"] = pd.read_csv(filepath)
-    return redirect(url_for('explore_data'))
+@app.route("/upload", methods=["POST"])
+def upload_file():
+    if "file" not in request.files:
+        return jsonify({"error": "No file provided"}), 400
+    file = request.files["file"]
+    df = pd.read_csv(file)
+    uploaded_data[file.filename] = df
+    return jsonify({"message": f"File {file.filename} uploaded successfully"}), 200
 
-@app.route('/explore')
-def explore_data():
-    return render_template('dash_embed.html')
+# Dash app integration
+dash_app = Dash(__name__, server=app, url_base_pathname="/dashboard/")
 
-@app.route('/get_data/<dataset_key>')
-def get_data(dataset_key):
-    if dataset_key in dataframes:
-        return dataframes[dataset_key].to_json(orient='records')
-    return jsonify({"error": "Dataset not found"}), 404
+dash_app.layout = html.Div([
+    html.H1("Data Explorer Dashboard"),
+    dcc.Dropdown(
+        id="dataset-selector",
+        options=[{"label": name, "value": name} for name in list(datasets.keys()) + list(uploaded_data.keys())],
+        placeholder="Select a dataset"
+    ),
+    dcc.Dropdown(id="column-selector", placeholder="Select a column"),
+    dcc.Graph(id="data-visualization"),
+])
 
-if __name__ == '__main__':
-    from dash_app import init_dash
-    init_dash(app)
+@dash_app.callback(
+    Output("column-selector", "options"),
+    Input("dataset-selector", "value")
+)
+def update_columns(dataset_name):
+    if dataset_name in datasets:
+        df = datasets[dataset_name]
+    elif dataset_name in uploaded_data:
+        df = uploaded_data[dataset_name]
+    else:
+        return []
+    return [{"label": col, "value": col} for col in df.columns]
+
+@dash_app.callback(
+    Output("data-visualization", "figure"),
+    [Input("dataset-selector", "value"), Input("column-selector", "value")]
+)
+def update_graph(dataset_name, column_name):
+    if not dataset_name or not column_name:
+        return {}
+    if dataset_name in datasets:
+        df = datasets[dataset_name]
+    elif dataset_name in uploaded_data:
+        df = uploaded_data[dataset_name]
+    else:
+        return {}
+    return px.histogram(df, x=column_name)
+
+if __name__ == "__main__":
     app.run(debug=True)
